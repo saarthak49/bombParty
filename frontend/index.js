@@ -2,7 +2,7 @@ const canvas = document.querySelector('canvas');
 const c = canvas.getContext('2d');
 canvas.width = window.innerWidth * 0.9;
 canvas.height = window.innerHeight * 0.82;
-let currentPlayer;
+let currentPlayerId;
 
 const socket = io('http://localhost:3000');
 
@@ -25,13 +25,13 @@ const joinedPlayers = document.getElementById('joinedPlayers');
 //event listeners are added here
 joinGameBtn.addEventListener('click', () => {
     if (gameCode.value && userName.value) {
-        socket.emit('joinGame', {gameCode: gameCode.value, userName: userName.value.toLocaleUpperCase()});
+        socket.emit('joinGame', { gameCode: gameCode.value, userName: userName.value.toLocaleUpperCase() });
     }
     else {
         alert('enter your name and code and try again')
         gotoHome();
     }
-        
+
 });
 
 newGameBtn.addEventListener('click', () => {
@@ -77,11 +77,9 @@ function handleUnknownGame() {
     alert('unknown game code');
 }
 socket.on('init', handleInit);
-function handleInit(number) {
-    currentPlayer = number;
+function handleInit(playerId) {
+    currentPlayerId = playerId;
     gotoLobby();
-    if(currentPlayer === 0)
-        startGame.style.display = "block";
 }
 
 socket.on('playerAdded', handlePlayerAdded);
@@ -93,6 +91,14 @@ function handlePlayerAdded(players) {
         imgElem.src = 'images/img.png';
         imgElem.style.display = 'block';
         const divElem = document.createElement('div');
+        if (currentPlayerId == player.clientId) {
+            const pHostElem = document.createElement('p');
+            pHostElem.style.color = 'green';
+            pHostElem.style.margin = 0;
+            const textHostElem = document.createTextNode("You");
+            pHostElem.appendChild(textHostElem);
+            divElem.appendChild(pHostElem);
+        }
         divElem.appendChild(imgElem);
         const pElem = document.createElement('p');
         const textElem = document.createTextNode(player.userName);
@@ -103,6 +109,9 @@ function handlePlayerAdded(players) {
         divElem.style.alignItems = 'center';
         divElem.style.flexDirection = 'column';
         divElem.style.marginRight = '10%';
+        if (player.clientId == currentPlayerId && player.isHost) {
+            startGame.style.display = 'block';
+        }
     })
 }
 
@@ -115,17 +124,17 @@ function animate(gameState) {
     c.fillRect(0, 0, canvas.width, canvas.height);
     // gameState = JSON.parse(gameState);
     let numPlayers = gameState.length;
-    let theta = 360.0/numPlayers;
+    let theta = 360.0 / numPlayers;
     let playerCount = 0;
     c.font = '20px Verdana';
     c.fillStyle = 'black';
-    c.fillText("Timer", canvas.width*0.49, canvas.height*0.4);
+    c.fillText("Timer", canvas.width * 0.49, canvas.height * 0.4);
     gameState.forEach(player => {
         let phi = theta * playerCount;
-        const x = player.radius * Math.sin(phi * 3.14/180);
-        const y = player.radius * Math.cos(phi * 3.14/180);
+        const x = player.radius * Math.sin(phi * 3.14 / 180);
+        const y = player.radius * Math.cos(phi * 3.14 / 180);
         c.fillStyle = 'red';
-        c.fillRect(x + canvas.width*0.5, y + canvas.height* 0.4 , 40, 40);
+        c.fillRect(x + canvas.width * 0.5, y + canvas.height * 0.4, 40, 40);
         playerCount += 1;
     })
 }

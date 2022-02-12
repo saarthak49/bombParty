@@ -3,7 +3,7 @@ import { start } from "repl";
 import { Server } from "socket.io";
 import { createGameState, gameLoop } from "./game.js";
 import Player from "./player.js";
-import { generateId,getRndInteger } from "./utils.js";
+import { generateId, getRndInteger } from "./utils.js";
 const httpServer = createServer();
 
 //creating and starting server
@@ -102,10 +102,9 @@ function handleConnectionByClient(client) {
         state[gameCode] = createGameState();
         client.emit('gameCode', gameCode);
         client.join(gameCode);
-        state[gameCode].players[client.id] = (new Player({x:getRndInteger(100,500), y:getRndInteger(100,500), userName: userName}));
-        client.number = 0;
-        io.sockets.in(gameCode).emit('playerAdded', JSON.stringify(Object.values(state[gameCode].players)))
-        client.emit('init', client.number);
+        state[gameCode].players[client.id] = (new Player({ x: getRndInteger(100, 500), y: getRndInteger(100, 500), userName: userName, isHost: true, clientId: client.id }));
+        client.emit('init', client.id);
+        io.sockets.in(gameCode).emit('playerAdded', JSON.stringify(Object.values(state[gameCode].players)));
         console.log(clientToGameCode);
         console.log(io.sockets.adapter.rooms.get(gameCode).size)
     }
@@ -116,13 +115,13 @@ function handleConnectionByClient(client) {
             client.emit('unknownGame');
         else {
             clientToGameCode[client.id] = gameCode;
-            
+
             client.number = io.sockets.adapter.rooms.get(gameCode).size;
             client.join(gameCode);
-            state[gameCode].players[client.id] = (new Player({x:getRndInteger(100,500), y:getRndInteger(100,500), userName: userName}));
+            state[gameCode].players[client.id] = (new Player({ x: getRndInteger(100, 500), y: getRndInteger(100, 500), userName: userName, isHost: false, clientId: client.id }));
+            client.emit('init', client.id);
             io.sockets.in(gameCode).emit('playerAdded', JSON.stringify(Object.values(state[gameCode].players)))
             console.log(client.number);
-            client.emit('init', client.number);
             console.log(io.sockets.adapter.rooms.get(gameCode).size)
         }
     }
@@ -130,8 +129,12 @@ function handleConnectionByClient(client) {
     function handleClientDisconnect() {
         const gameCode = clientToGameCode[client.id];
         delete clientToGameCode[client.id];
-        if(state[gameCode]){
+        if (state[gameCode]) {
             delete state[gameCode].players[client.id];
+            if (io.sockets.adapter.rooms.get(gameCode)) {
+                const hostId = Object.keys(state[gameCode].players)[0];
+                state[gameCode].players[hostId].isHost = true;
+            }
             io.sockets.in(gameCode).emit('playerAdded', JSON.stringify(Object.values(state[gameCode].players)));
         }
         if (!(io.sockets.adapter.rooms.get(gameCode))) {
@@ -154,7 +157,7 @@ function startGameInterval(gameCode) {
         io.sockets.in(gameCode).emit('renderGameState', JSON.stringify(Object.values(state[gameCode].players)));
     }, 1000 / 60);
 
-    
+
 }
 
 function stopGameInterval(gameCode) {

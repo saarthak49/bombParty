@@ -51,7 +51,7 @@ body {
   display: flex;
   flex-direction: row;
   justify-content: space-evenly;
-  align-items: center;
+  align-items: flex-end;
   margin-right: 5%;
   margin-left: 5%;
   flex-wrap: wrap;

@@ -1,5 +1,5 @@
 export default class Player {
-    constructor({x, y, userName}) {
+    constructor({x, y, userName, isHost, clientId}) {
         this.position = {
             x,
             y
@@ -21,5 +21,7 @@ export default class Player {
         }
         this.radius = -200;
         this.size = 40;
+        this.isHost = isHost;
+        this.clientId = clientId
     }
 }
